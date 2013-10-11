@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ajxp_plugin name="islandora" label="CONF_MESSAGE[Islandora Integration]" description="CONF_MESSAGE[Ingest files into Islandora]"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="file:../core.ajaxplorer/ajxp_registry.xsd">
+<ajxp_plugin name="action.sfudora" label="CONF_MESSAGE[Islandora Integration]" description="CONF_MESSAGE[Ingest files into Islandora]"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="file:../core.ajaxplorer/ajxp_registry.xsd">
     <client_settings>
         <resources>
-            <i18n namespace="action.islandora" path="plugins/action.islandora/i18n"/>
-            <js file="plugins/action.islandora/class.Islandora.js" className="Islandora" autoload="true"/>
+            <i18n namespace="action.sfudora" path="plugins/action.sfudora/i18n"/>
         </resources>
     </client_settings>
     <server_settings>
@@ -12,7 +11,7 @@
     <registry_contributions>
         <actions>
             <action name="islandora_ingest">
-                <gui text="action.islandora.1" title="action.islandora.1" src="share.png" iconClass="icon-share" hasAccessKey="false">
+                <gui text="action.sfudora.form_title" title="action.sfudora.form_title" src="share.png" iconClass="icon-share" hasAccessKey="false">
                 <context selection="true" dir="true" recycle="false"
                          actionBar="true" contextMenu="true" infoPanel="false"
                          actionBarGroup="get">
@@ -21,22 +20,33 @@
                 </gui>
                 <rightsContext noUser="true" userLogged="only" read="true" write="true" adminOnly=""></rightsContext>
                 <processing>
-                    <clientCallback prepareModal="true" dialogOpenForm="islandora_form" dialogOkButtonOnly="true" dialogSkipButtons="false"></clientCallback>
+                    <clientCallback prepareModal="true" dialogOpenForm="islandora_form" dialogOkButtonOnly="true" dialogSkipButtons="false">
+                      <dialogOnOpen><![CDATA[
+                        selection = ajaxplorer.getUserSelection();
+                        query_string = Object.toQueryString({
+                          is_dir: selection._bDir,
+			  repo_id: ajaxplorer.repositoryId,
+                          // Point the remote server back here...
+                          // XXX: Should probably be done dynamically.
+                          download_base_url: '/ajaxplorer/index.php',
+                          download_query_params: Object.toQueryString({
+                            get_action: 'download',
+                            secure_token: Connexion.SECURE_TOKEN,
+                            file: selection.getFileNames().pop()
+                          })
+                        });
+                        var path ='/sfudora/ingest?' + query_string;
+                        window.parent.redirect(path);
+                      ]]></dialogOnOpen>
+                      <dialogOnComplete><![CDATA[
+                          hideLightBox();
+                      ]]></dialogOnComplete>
+                    </clientCallback>
                     <clientForm id="islandora_form"><![CDATA[
-                         <div id="islandora_form" box_width="330">
-                             <div class="dialogLegend" ajxp_message_id="action.islandora.1">AJXP_MESSAGE[action.islandora.1]</div>
-                             <div class="SF_element SF_largeLabel">
-                                <div class="SF_label" ajxp_message_id="action.islandora.2">AJXP_MESSAGE[action.islandora.2]</div>
-                                <input type="text" name="islandora-title" id="islandora-title">
-                             </div>
-
-                             <textarea class="dialogFocus" style="width:300px;height:80px; margin-top: 5px;" id="islandora_description"></textarea>
-                         </div>
+                      <div id="islandora_form"></div>
                     ]]></clientForm>
-                    <serverCallback methodName="switchAction"></serverCallback>
                 </processing>
             </action>
         </actions>
     </registry_contributions>
-    <class_definition filename="plugins/action.islandora/class.Islandora.php" classname="Islandora"/>
 </ajxp_plugin>
